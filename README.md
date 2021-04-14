@@ -1,5 +1,51 @@
 # FlappyBird en Python con Pygame
 
+## Contenido
+
+- [Introducción](#introducción)
+  - [Fuente del tutorial](#fuente-del-tutorial)
+  - [Código fuente](#código-fuente)
+  - [Recomendaciones antes de iniciar](#recomendaciones-antes-de-iniciar)
+- [Instalación de pygame](#instalación-de-pygame)
+- [Creación del juego](#creación-del-juego)
+  - [Preparación del entorno de trabajo](#preparación-del-entorno-de-trabajo)
+  - [Importando pygame](#importando-pygame)
+  - [Creando la ventana del juego](#creando-la-ventana-del-juego)
+  - [Añadiendo el fondo](#añadiendo-el-fondo)
+  - [Agregando el suelo](#agregando-el-suelo)
+  - [Añadiendo el ave](#añadiendo-el-ave)
+  - [Agregando la gravedad](#agregando-la-gravedad)
+  - [Añadiendo el salto](#añadiendo-el-salto)
+  - [Agregando los tubos](#agregando-los-tubos)
+  - [Terminando los tubos](#terminando-los-tubos)
+  - [Creando el sistema de colisiones](#creando-el-sistema-de-colisiones)
+  - [Girando el ave](#girando-el-ave)
+  - [Animando el ave](#animando-el-ave)
+  - [Agregando el sistema de puntuación](#agregando-el-sistema-de-puntuación)
+  - [Agregando la pantalla de game over](#agregando-la-pantalla-de-game-over)
+  - [Agregando el sonido](#agregando-el-sonido)
+
+## Introducción
+
+### Fuente del tutorial
+
+El presente tutorial está basado en el tutorial realizado por [Clear Code](https://www.youtube.com/c/ClearCode/featured 'Canal en Youtube'), el cual consiste en los siguientes 2 vídeos:
+
+- [Learning pygame by making Flappy Bird](https://www.youtube.com/watch?v=UZg49z76cLw)
+- [Learning pygame by making Flappy Bird - Update: Better score + better asset management + Pygame 2](https://www.youtube.com/watch?v=XRw1FUEsSv4)
+
+Puesto que el es el creador original del código que veremos a continuación, les recomiendo dar un vistazo a sus videos y dejar su Me gusta.
+
+### Código fuente
+
+El código fuente que se obtiene al final de este tutorial está disponible para su descarga en el proyecto [flappy-bird](https://github.com/danielq1117/flappy-bird).
+
+### Recomendaciones antes de iniciar
+
+Para comenzar este tutorial es necesario tener instalado [python](https://www.python.org) en el ordenador, y que este esté en el PATH del sistema.
+
+Además es recomendable tener un editor de código como [Visual Studio Code](https://code.visualstudio.com).
+
 ## Instalación de pygame
 
 Para instalar pygame en nuestro ordenador, ejecutaremos el símbolo del sistema como administrador.
@@ -861,3 +907,53 @@ rect_game_over = superficie_game_over.get_rect(center = (144,256))
 </code></pre>
 
 ![screen15](images/screen15.png)
+
+### Agregando el sonido
+
+¡Nuestro juego está prácticamente terminado! Lo único que nos falta es agregar los sonidos para que este se sienta más vivo. Los sonidos que añadiremos serán el de salto, muerte y puntuación, lo cual haremos como se muestra en el código a continuación:
+
+<pre><code><div style="background: #CCE5FF">...</div>
+  for tubo in tubos:
+    if rect_ave.colliderect(tubo):
+<div style="background: #B3FFC6">      sonido_muerte.play()</div>      score_activo = True
+      return False
+
+  if rect_ave.top <= -50 or rect_ave.bottom >= 450:
+<div style="background: #B3FFC6">    sonido_muerte.play()</div>    score_activo = True
+    return False
+
+<div style="background: #CCE5FF">...</div>    for tubo in lista_tubos:
+      if 45 < tubo.centerx < 55 and score_activo:
+        score += 1
+<div style="background: #B3FFC6">        sonido_score.play()</div>        score_activo = False
+      if tubo.centerx < 0:
+        score_activo = True
+<div style="background: #CCE5FF">...</div>superficie_game_over = pygame.image.load('assets/message.png').convert_alpha()
+rect_game_over = superficie_game_over.get_rect(center = (144,256))
+
+<div style="background: #B3FFC6">sonido_flap = pygame.mixer.Sound('sound/sfx_wing.wav')
+sonido_muerte = pygame.mixer.Sound('sound/sfx_hit.wav')
+sonido_score = pygame.mixer.Sound('sound/sfx_point.wav')
+
+</div>while True:
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT:
+<div style="background: #CCE5FF">...</div>      if event.key == pygame.K_SPACE:
+        if juego_activo:
+          movimiento_ave = -7
+<div style="background: #B3FFC6">          sonido_flap.play()</div>        else:
+          juego_activo = True
+          lista_tubos.clear()
+</code></pre>
+
+Lo primero que hacemos es crear 3 variables en las que almacenaremos los sonidos que utilizaremos en el juego:
+
+```python
+sonido_flap = pygame.mixer.Sound('sound/sfx_wing.wav')
+sonido_muerte = pygame.mixer.Sound('sound/sfx_hit.wav')
+sonido_score = pygame.mixer.Sound('sound/sfx_point.wav')
+```
+
+Lo único que tenemos que hacer entonces es reproducirlos mediante el método `.play()` cuando queremos que se reproduzcan. El de salto cuando el usuario salta, el de muerte cuando el ave muere y el de puntuación cuando el usuario pasa entre los tubos.
+
+¡Lo único que resta por hacer es disfrutar nuestro juego!
