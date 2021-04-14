@@ -547,3 +547,317 @@ if event.key == pygame.K_SPACE:
 Si ejecutamos el juego ahora, este se detendrá al chocar con un obstáculo, y podremos reiniciarlo al presionar la barra espaciadora.
 
 ![screen11](images/screen11.gif)
+
+### Girando el ave
+
+Para girar el ave crearemos una función que se encargue de rotarla en función de su velocidad, y entonces la llamaremos en cada ciclo para dibujar el ave girada en lugar del ave original. Además deberemos modificar la línea donde creamos la superficie para que al girarla el fondo del ave no se vuelva negro.
+
+<pre><code><div style="background: #CCE5FF">...</div>
+  return True
+
+<div style="background: #B3FFC6">def girar_ave(ave):
+  nueva_ave = pygame.transform.rotozoom(ave,-movimiento_ave * 3,1)
+  return nueva_ave
+
+</div>pygame.init()
+pantalla = pygame.display.set_mode((288,512))
+reloj = pygame.time.Clock()
+<div style="background: #CCE5FF">...</div>superficie_suelo = pygame.image.load('assets/base.png').convert()
+pos_suelo_x = 0
+
+<div style="background: #FFCCD2">superficie_ave = pygame.image.load('assets/bluebird-midflap.png').convert()</div><div style="background: #B3FFC6">superficie_ave = pygame.image.load('assets/bluebird-midflap.png').convert_alpha()</div>rect_ave = superficie_ave.get_rect(center = (50,256))
+
+superficie_tubo = pygame.image.load('assets/pipe-green.png').convert()
+<div style="background: #CCE5FF">...</div>
+    # Ave
+    movimiento_ave += gravedad
+    rect_ave.centery += movimiento_ave
+<div style="background: #FFCCD2">    pantalla.blit(superficie_ave,rect_ave)</div><div style="background: #B3FFC6">    ave_girada = girar_ave(superficie_ave)
+    pantalla.blit(ave_girada,rect_ave)</div>    juego_activo = detectar_colisiones(lista_tubos)
+
+    # Tubos
+</code></pre>
+
+Si ejecutamos el juego en este punto veremos como el ave gira cuando cae y
+cuando salta.
+
+![screen12](images/screen12.gif)
+
+### Animando el ave
+
+Para darle más vida a nuestra ave, vamos a agregar una animación en sus alas mediante el uso de sprites, tal y como se muestra a continuación.
+
+<pre><code><div style="background: #CCE5FF">...</div>  nueva_ave = pygame.transform.rotozoom(ave,-movimiento_ave * 3,1)
+  return nueva_ave
+
+<div style="background: #B3FFC6">def animacion_ave():
+  nueva_ave = cuadros_ave[index_ave]
+  nuevo_rect_ave = nueva_ave.get_rect(center = (50,rect_ave.centery))
+  return nueva_ave,nuevo_rect_ave
+
+</div>pygame.init()
+pantalla = pygame.display.set_mode((288,512))
+reloj = pygame.time.Clock()
+<div style="background: #CCE5FF">...</div>superficie_suelo = pygame.image.load('assets/base.png').convert()
+pos_suelo_x = 0
+
+<div style="background: #FFCCD2">superficie_ave = pygame.image.load('assets/bluebird-midflap.png').convert_alpha()</div><div style="background: #B3FFC6">ave_bajo = pygame.image.load('assets/bluebird-downflap.png').convert_alpha()
+ave_medio = pygame.image.load('assets/bluebird-midflap.png').convert_alpha()
+ave_alto = pygame.image.load('assets/bluebird-upflap.png').convert_alpha()
+cuadros_ave = [ave_bajo,ave_medio,ave_alto]
+index_ave = 0
+superficie_ave = cuadros_ave[index_ave]</div>rect_ave = superficie_ave.get_rect(center = (50,256))
+
+<div style="background: #B3FFC6">FLAPAVE = pygame.USEREVENT + 1
+pygame.time.set_timer(FLAPAVE, 200)
+
+</div>superficie_tubo = pygame.image.load('assets/pipe-green.png').convert()
+lista_tubos = []
+SPAWNTUBO = pygame.USEREVENT
+<div style="background: #CCE5FF">...</div>    if event.type == SPAWNTUBO:
+      lista_tubos.extend(crear_tubo())
+
+<div style="background: #B3FFC6">    if event.type == FLAPAVE:
+      if index_ave < 2:
+        index_ave += 1
+      else:
+        index_ave = 0
+
+      superficie_ave,rect_ave = animacion_ave()
+
+</div>  pantalla.blit(superficie_fondo, (0,0))
+
+  if juego_activo:
+</code></pre>
+
+Lo primero que debemos hacer es reemplazar la definición de la superficie del ave, para tener los 3 sprites guardados en una lista, y tener guardado en una variable cuál de los 3 es el que se usa actualmente.
+
+```python
+ave_bajo = pygame.image.load('assets/bluebird-downflap.png').convert_alpha()
+ave_medio = pygame.image.load('assets/bluebird-midflap.png').convert_alpha()
+ave_alto = pygame.image.load('assets/bluebird-upflap.png').convert_alpha()
+cuadros_ave = [ave_bajo,ave_medio,ave_alto]
+index_ave = 0
+superficie_ave = cuadros_ave[index_ave]
+```
+
+Enseguida creamos un nuevo `USEREVENT` que se activa cada 0.2 segundos para cambiar la imagen del ave constantemente.
+
+```python
+FLAPAVE = pygame.USEREVENT + 1
+pygame.time.set_timer(FLAPAVE, 200)
+```
+
+A continuación crearemos una función que se encargará de cambiar la imagen del ave y de actualizar el rectángulo de acuerdo con este cambio:
+
+```python
+def animacion_ave():
+  nueva_ave = cuadros_ave[index_ave]
+  nuevo_rect_ave = nueva_ave.get_rect(center = (50,rect_ave.centery))
+  return nueva_ave,nuevo_rect_ave
+```
+
+Finalmente detectaremos el `USEREVENT` para que se cambie el índice y llame a la función que acabamos de crear.
+
+```python
+if event.type == FLAPAVE:
+      if index_ave < 2:
+        index_ave += 1
+      else:
+        index_ave = 0
+
+      superficie_ave,rect_ave = animacion_ave()
+```
+
+Ahora podremos ver cómo se mueven las alas del ave en el juego.
+
+![screen13](images/screen13.gif)
+
+### Agregando el sistema de puntuación
+
+Para agregar la puntuación a nuestro juego y para mostrarlo en pantalla tendremos que agregar el siguiente código:
+
+<pre><code><div style="background: #CCE5FF">...</div>      pantalla.blit(voltear_tubo,tubo)
+
+def detectar_colisiones(tubos):
+<div style="background: #B3FFC6">  global score_activo
+
+</div>  for tubo in tubos:
+    if rect_ave.colliderect(tubo):
+<div style="background: #B3FFC6">      score_activo = True
+</div>      return False
+
+  if rect_ave.top <= -50 or rect_ave.bottom >= 450:
+<div style="background: #B3FFC6">    score_activo = True
+</div>    return False
+
+  return True
+<div style="background: #CCE5FF">...</div>  nuevo_rect_ave = nueva_ave.get_rect(center = (50,rect_ave.centery))
+  return nueva_ave,nuevo_rect_ave
+
+<div style="background: #B3FFC6">def mostrar_score(estado_juego):
+  if estado_juego == 'activo':
+    superficie_score = fuente.render(str(score),True,(255,255,255))
+    rect_score = superficie_score.get_rect(center = (144,50))
+    pantalla.blit(superficie_score,rect_score)
+  if estado_juego == 'game_over':
+    superficie_score = fuente.render(f'Score: {score}',True,(255,255,255))
+    rect_score = superficie_score.get_rect(center = (144,50))
+    pantalla.blit(superficie_score,rect_score)
+    
+    superficie_high_score = fuente.render(f'High score: {high_score}',True,(255,255,255))
+    rect_high_score = superficie_high_score.get_rect(center = (144,425))
+    pantalla.blit(superficie_high_score,rect_high_score)
+
+def actualizar_high_score(score, high_score):
+  if score > high_score:
+    high_score = score
+  return high_score
+
+def revisar_score():
+  global score, score_activo
+  
+  if lista_tubos:
+    for tubo in lista_tubos:
+      if 45 < tubo.centerx < 55 and score_activo:
+        score += 1
+        score_activo = False
+      if tubo.centerx < 0:
+        score_activo = True
+
+</div>pygame.init()
+pantalla = pygame.display.set_mode((288,512))
+reloj = pygame.time.Clock()
+<div style="background: #B3FFC6">fuente = pygame.font.Font('04B_19.ttf',20)
+</div>
+# Variables del Juego
+gravedad = 0.25
+movimiento_ave = 0
+juego_activo = True
+<div style="background: #B3FFC6">score = 0
+high_score = 0
+score_activo = True
+</div>
+superficie_fondo = pygame.image.load('assets/background-day.png').convert()
+superficie_suelo = pygame.image.load('assets/base.png').convert()
+<div style="background: #CCE5FF">...</div>          lista_tubos.clear()
+          rect_ave.center = (50,256)
+          movimiento_ave = 0
+<div style="background: #B3FFC6">          score = 0
+</div>
+    if event.type == SPAWNTUBO:
+      lista_tubos.extend(crear_tubo())
+<div style="background: #CCE5FF">...</div>    lista_tubos = mover_tubos(lista_tubos)
+    mostrar_tubos(lista_tubos)
+    
+<div style="background: #B3FFC6">    # Score
+    revisar_score()
+    mostrar_score('activo')
+
+</div>    # Suelo
+    pos_suelo_x -= 1
+<div style="background: #B3FFC6">  else:
+    high_score = actualizar_high_score(score,high_score)
+    mostrar_score('game_over')
+
+</div>  pantalla.blit(superficie_suelo,(pos_suelo_x,450))
+  pantalla.blit(superficie_suelo,(pos_suelo_x + 288,450))
+  if pos_suelo_x <= -288:
+</code></pre>
+
+Lo primero que agregaremos son las variables `score`, para almacenar la puntuación actual del jugador, y `high_score` para almacenar la puntuación más alta obtenida por el jugador.
+
+Enseguida crearemos la función `revisar_score`, que aumentará 1 punto al jugador cada vez que pase por la mitad de un tubo. Además utilizaremos una variable llamada `score_activo`, que pausará el aumento de puntuación para evitar que se aumenten 2 puntos al mismo tiempo, y que volveremos a activar cuando los tubos salgan de la pantalla.
+
+```python
+def revisar_score():
+  global score, score_activo
+
+  if lista_tubos:
+    for tubo in lista_tubos:
+      if 45 < tubo.centerx < 55 and score_activo:
+        score += 1
+        score_activo = False
+      if tubo.centerx < 0:
+        score_activo = True
+```
+
+Además crearemos la función `actualizar_high_score`, que nos permitirá actualizar el valor del `high_score` cuando el usuario lo supere.
+
+```python
+def actualizar_high_score(score, high_score):
+  if score > high_score:
+    high_score = score
+  return high_score
+```
+
+También deberemos actualizar la función `detectar_colisiones` para que reactive `score_activo` cuando el usuario pierda, y estableceremos el valor de `score` en 0 cuando el usuario inicie una nueva partida.
+
+```python
+def detectar_colisiones(tubos):
+  global score_activo
+
+  for tubo in tubos:
+    if rect_ave.colliderect(tubo):
+      score_activo = True
+      return False
+
+  if rect_ave.top <= -50 or rect_ave.bottom >= 450:
+    score_activo = True
+    return False
+
+  return True
+```
+
+Para mostrar el score y el high score en la pantalla necesitaremos importar la fuente en la que mostraremos el texto, lo cual realizaremos con la siguiente línea, donde indicamos el archivo de la fuente y el tamaño que esta tendrá.
+
+```python
+fuente = pygame.font.Font('04B_19.ttf',20)
+```
+
+Enseguida crearemos la función `mostrar_score`. Esta función crea una superficie en la que mostramos el score en color blanco, y utilizamos un rectángulo para poderlo centrar en la pantalla del juego. Si estamos en el game over en vez de mostrar únicamente el score mostrará el score en la parte superior de la pantalla y el high score en la parte inferior.
+
+```python
+def mostrar_score(estado_juego):
+  if estado_juego == 'activo':
+    superficie_score = fuente.render(str(score),True,(255,255,255))
+    rect_score = superficie_score.get_rect(center = (144,50))
+    pantalla.blit(superficie_score,rect_score)
+  if estado_juego == 'game_over':
+    superficie_score = fuente.render(f'Score: {score}',True,(255,255,255))
+    rect_score = superficie_score.get_rect(center = (144,50))
+    pantalla.blit(superficie_score,rect_score)
+
+    superficie_high_score = fuente.render(f'High score: {high_score}',True,(255,255,255))
+    rect_high_score = superficie_high_score.get_rect(center = (144,425))
+    pantalla.blit(superficie_high_score,rect_high_score)
+```
+
+Por último, llamamos a las funciones que creamos en cada ciclo para actualizar y mostrar el score y el high score de forma constante.
+
+Si jugamos en este momento, ya podremos ver nuestra puntuación.
+
+![screen14](images/screen14.gif)
+
+### Agregando la pantalla de game over
+
+Para agregar la pantalla de game over, crearemos una superficie con la imagen y la situaremos en el centro de la pantalla, para mostrarla cuando el usuario haya perdido.
+
+<pre><code><div style="background: #CCE5FF">...</div>pygame.time.set_timer(SPAWNTUBO, 1200)
+altura_tubo = [200,300,400]
+
+<div style="background: #B3FFC6">superficie_game_over = pygame.image.load('assets/message.png').convert_alpha()
+rect_game_over = superficie_game_over.get_rect(center = (144,256))
+
+</div>while True:
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT:
+<div style="background: #CCE5FF">...</div>    # Suelo
+    pos_suelo_x -= 1
+  else:
+<div style="background: #B3FFC6">    pantalla.blit(superficie_game_over,rect_game_over)</div>    high_score = actualizar_high_score(score,high_score)
+    mostrar_score('game_over')
+ 
+</code></pre>
+
+![screen15](images/screen15.png)
