@@ -376,3 +376,174 @@ Finalmente ejecutamos las funciones de movimiento y dibujado en cada ciclo, para
 Si ejecutamos el juego en este punto, podremos ver como se nos acercan tubos de forma constante.
 
 ![screen9](images/screen9.gif)
+
+### Terminando los tubos
+
+A continuación haremos que la altura de los tubos varíe de forma aleatoria, generaremos los tubos de arriba y eliminaremos los tubos que ya no estén en pantalla para evitar sobrecargar al juego.
+
+<pre><code>
+import pygame, sys, random
+
+def crear_tubo():
+<div style="background: #FFCCD2">  tubo_nuevo = superficie_tubo.get_rect(midtop = (350,256))
+  return tubo_nuevo</div><div style="background: #B3FFC6">  altura_random =random.choice(altura_tubo)
+  tubo_abajo = superficie_tubo.get_rect(midtop = (350,altura_random))
+  tubo_arriba = superficie_tubo.get_rect(midbottom = (350,altura_random - 150))
+  return tubo_abajo, tubo_arriba</div>
+def mover_tubos(tubos):
+  for tubo in tubos:
+    tubo.centerx -= 5
+<div style="background: #FFCCD2">  return tubos</div><div style="background: #B3FFC6">  tubos_visibles = [tubo for tubo in tubos if tubo.right > -50]
+  return tubos_visibles</div>
+
+def mostrar_tubos(tubos):
+  for tubo in tubos:
+<div style="background: #B3FFC6">    if tubo.bottom >= 512:</div>      pantalla.blit(superficie_tubo,tubo)
+<div style="background: #B3FFC6">    else:
+      voltear_tubo = pygame.transform.flip(superficie_tubo,False,True)
+      pantalla.blit(voltear_tubo,tubo)</div>
+pygame.init()
+pantalla = pygame.display.set_mode((288,512))
+<div style="background: #CCE5FF">...</div>lista_tubos = []
+SPAWNTUBO = pygame.USEREVENT
+pygame.time.set_timer(SPAWNTUBO, 1200)
+<div style="background: #B3FFC6">altura_tubo = [200,300,400]</div>
+while True:
+  for event in pygame.event.get():
+<div style="background: #CCE5FF">...</div>      if event.key == pygame.K_SPACE:
+        movimiento_ave = -7
+    if event.type == SPAWNTUBO:
+<div style="background: #FFCCD2">      lista_tubos.append(crear_tubo())</div><div style="background: #B3FFC6">      lista_tubos.extend(crear_tubo())</div>
+  pantalla.blit(superficie_fondo, (0,0))
+
+</code></pre>
+
+Para establecer las posibles alturas de los tubos, agregamos una lista con las alturas que queremos que tengan.
+
+```python
+altura_tubo = [200,300,400]
+```
+
+Para asignar estas alturas de forma aleatoria y agregar los tubos de arriba, modificamos la función `crear_tubo` de forma que quede así:
+
+```python
+def crear_tubo():
+  altura_random =random.choice(altura_tubo)
+  tubo_abajo = superficie_tubo.get_rect(midtop = (350,altura_random))
+  tubo_arriba = superficie_tubo.get_rect(midbottom = (350,altura_random - 150))
+  return tubo_abajo, tubo_arriba
+```
+
+Para poder agregar dos tubos a la lista al mismo tiempo, reemplazaremos la línea `lista_tubos.append(crear_tubo())` por `lista_tubos.extend(crear_tubo())`.
+
+Para voltear los tubos superiores de forma que su boca quede apuntando hacia abajo, modificaremos la función `mostrar_tubos` de la siguiente forma:
+
+```python
+def mostrar_tubos(tubos):
+  for tubo in tubos:
+    if tubo.bottom >= 512:
+      pantalla.blit(superficie_tubo,tubo)
+    else:
+      voltear_tubo = pygame.transform.flip(superficie_tubo,False,True)
+      pantalla.blit(voltear_tubo,tubo)
+```
+
+Finalmente, para eliminar los tubos que ya hayan desaparecido, modificaremos la función `mover_tubos` para que elimine los tubos que vayan llegando a la izquierda.
+
+```python
+def mover_tubos(tubos):
+  for tubo in tubos:
+    tubo.centerx -= 5
+  tubos_visibles = [tubo for tubo in tubos if tubo.right > -50]
+  return tubos_visibles
+```
+
+Si ejecutamos el juego en este momento, veremos que los tubos funcionan perfectamente, aunque aún no funcionan las colisiones.
+
+![screen10](images/screen10.gif)
+
+### Creando el sistema de colisiones
+
+Para que el juego funcione, este debe detectar cuando el ave choca con los tubos, el suelo o cuando vuela demasiado arriba. Además debe poder reiniciarse luego de que el jugador pierda, para lo que agregaremos el código siguiente:
+
+<pre><code><div style="background: #CCE5FF">...</div>      voltear_tubo = pygame.transform.flip(superficie_tubo,False,True)
+      pantalla.blit(voltear_tubo,tubo)
+
+<div style="background: #B3FFC6">def detectar_colisiones(tubos):
+  for tubo in tubos:
+    if rect_ave.colliderect(tubo):
+      return False
+
+  if rect_ave.top <= -50 or rect_ave.bottom >= 450:
+    return False
+
+  return True
+
+</div>pygame.init()
+pantalla = pygame.display.set_mode((288,512))
+reloj = pygame.time.Clock()
+
+# Variables del Juego
+gravedad = 0.25
+movimiento_ave = 0
+<div style="background: #B3FFC6">juego_activo = True</div>
+superficie_fondo = pygame.image.load('assets/background-day.png').convert()
+superficie_suelo = pygame.image.load('assets/base.png').convert()
+<div style="background: #CCE5FF">...</div>      sys.exit()
+    if event.type == pygame.KEYDOWN:
+      if event.key == pygame.K_SPACE:
+<div style="background: #B3FFC6">        if juego_activo:</div>          movimiento_ave = -7
+<div style="background: #B3FFC6">        else:
+          juego_activo = True
+          lista_tubos.clear()
+          rect_ave.center = (50,256)
+          movimiento_ave = 0
+
+</div>    if event.type == SPAWNTUBO:
+      lista_tubos.extend(crear_tubo())
+
+  pantalla.blit(superficie_fondo, (0,0))
+
+<div style="background: #B3FFC6">  if juego_activo:</div>    # Ave
+    movimiento_ave += gravedad
+    rect_ave.centery += movimiento_ave
+    pantalla.blit(superficie_ave,rect_ave)
+<div style="background: #B3FFC6">    juego_activo = detectar_colisiones(lista_tubos)</div>
+    # Tubos
+    lista_tubos = mover_tubos(lista_tubos)
+</code></pre>
+
+Lo primero que haremos es crear una variable para saber si el juego está activo o si el jugador ha perdido, para lo que añadimos la línea `juego_activo = True`.
+
+Enseguida crearemos una función que se encargará de detectar las colisiones con los tubos, el suelo y el "techo" del juego, y que devolverán un valor booleano de acuerdo con el resultado obtenido.
+
+```python
+def detectar_colisiones(tubos):
+  for tubo in tubos:
+    if rect_ave.colliderect(tubo):
+      return False
+
+  if rect_ave.top <= -50 or rect_ave.bottom >= 450:
+    return False
+
+  return True
+```
+
+A continuación condicionaremos el movimiento del ave, los tubos y el suelo de acuerdo con el estado del juego, mediante la línea `if juego_activo:`, además de llamar a la función `detectar_colisiones` mientras el juego siga activo.
+
+Finalmente, para poder reiniciar el juego condicionaremos la acción a realizar cuando se presione la barra espaciadora. Si el juego está activo, hará que el ave salte, y en caso contrario, restablecerá los valores iniciales de los tubos y del ave, tal y como se muestra a continuación:
+
+```python
+if event.key == pygame.K_SPACE:
+  if juego_activo:
+    movimiento_ave = -7
+  else:
+    juego_activo = True
+    lista_tubos.clear()
+    rect_ave.center = (50,256)
+    movimiento_ave = 0
+```
+
+Si ejecutamos el juego ahora, este se detendrá al chocar con un obstáculo, y podremos reiniciarlo al presionar la barra espaciadora.
+
+![screen11](images/screen11.gif)
